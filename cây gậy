@@ -1,0 +1,458 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Trạng thái Bật/Tắt riêng lẻ từng tính năng
+local isRightStaffOn = false
+local isLeftHammerOn = false
+local isDualKarambitOn = false
+local isSpinning = false
+
+local currentRightStaff = nil
+local currentLeftHammer = nil
+local currentDualKarambit = nil
+local spinConnection = nil
+
+-- ==========================================
+-- GIAO DIỆN GUI (NÚT BẬT/TẮT RIÊNG LẺ)
+-- ==========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "WeaponControlGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 200, 0, 260)
+mainFrame.Position = UDim2.new(0.5, -100, 0.15, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 10)
+frameCorner.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -30, 0, 30)
+title.Position = UDim2.new(0, 10, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "Weapon Hub"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 16
+title.Font = Enum.Font.SourceSansBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = mainFrame
+
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+minimizeBtn.Position = UDim2.new(1, -30, 0, 5)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+minimizeBtn.Text = "-"
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.TextSize = 16
+minimizeBtn.Font = Enum.Font.SourceSansBold
+minimizeBtn.Parent = mainFrame
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 6)
+minCorner.Parent = minimizeBtn
+
+-- 1. Nút Gậy Tay Phải
+local rightToggleBtn = Instance.new("TextButton")
+rightToggleBtn.Size = UDim2.new(0.85, 0, 0, 34)
+rightToggleBtn.Position = UDim2.new(0.075, 0, 0.15, 0)
+rightToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+rightToggleBtn.Text = "Right Staff: OFF"
+rightToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+rightToggleBtn.TextSize = 13
+rightToggleBtn.Font = Enum.Font.SourceSansBold
+rightToggleBtn.Parent = mainFrame
+
+local rightCorner = Instance.new("UICorner")
+rightCorner.CornerRadius = UDim.new(0, 8)
+rightCorner.Parent = rightToggleBtn
+
+-- 2. Nút BÚA LÒ XO Tay Trái
+local leftToggleBtn = Instance.new("TextButton")
+leftToggleBtn.Size = UDim2.new(0.85, 0, 0, 34)
+leftToggleBtn.Position = UDim2.new(0.075, 0, 0.32, 0)
+leftToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+leftToggleBtn.Text = "Spring Hammer: OFF"
+leftToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+leftToggleBtn.TextSize = 13
+leftToggleBtn.Font = Enum.Font.SourceSansBold
+leftToggleBtn.Parent = mainFrame
+
+local leftCorner = Instance.new("UICorner")
+leftCorner.CornerRadius = UDim.new(0, 8)
+leftCorner.Parent = leftToggleBtn
+
+-- 3. Nút DUAL KARAMBIT
+local karambitToggleBtn = Instance.new("TextButton")
+karambitToggleBtn.Size = UDim2.new(0.85, 0, 0, 34)
+karambitToggleBtn.Position = UDim2.new(0.075, 0, 0.49, 0)
+karambitToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+karambitToggleBtn.Text = "Dual Karambit: OFF"
+karambitToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+karambitToggleBtn.TextSize = 13
+karambitToggleBtn.Font = Enum.Font.SourceSansBold
+karambitToggleBtn.Parent = mainFrame
+
+local karambitCorner = Instance.new("UICorner")
+karambitCorner.CornerRadius = UDim.new(0, 8)
+karambitCorner.Parent = karambitToggleBtn
+
+-- 4. Nút XOAY GẬY TÔN NGỘ KHÔNG
+local spinToggleBtn = Instance.new("TextButton")
+spinToggleBtn.Size = UDim2.new(0.85, 0, 0, 34)
+spinToggleBtn.Position = UDim2.new(0.075, 0, 0.66, 0)
+spinToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+spinToggleBtn.Text = "Spin Staff: OFF"
+spinToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+spinToggleBtn.TextSize = 13
+spinToggleBtn.Font = Enum.Font.SourceSansBold
+spinToggleBtn.Parent = mainFrame
+
+local spinCorner = Instance.new("UICorner")
+spinCorner.CornerRadius = UDim.new(0, 8)
+spinCorner.Parent = spinToggleBtn
+
+-- Nút bong bóng thu nhỏ
+local bubbleBtn = Instance.new("ImageButton")
+bubbleBtn.Name = "BubbleButton"
+bubbleBtn.Size = UDim2.new(0, 45, 0, 45)
+bubbleBtn.Position = UDim2.new(0.05, 0, 0.2, 0)
+bubbleBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+bubbleBtn.Visible = false
+bubbleBtn.Active = true
+bubbleBtn.Draggable = true
+bubbleBtn.Parent = screenGui
+
+local bubbleCorner = Instance.new("UICorner")
+bubbleCorner.CornerRadius = UDim.new(1, 0)
+bubbleCorner.Parent = bubbleBtn
+
+local bubbleIcon = Instance.new("TextLabel")
+bubbleIcon.Size = UDim2.new(1, 0, 1, 0)
+bubbleIcon.BackgroundTransparency = 1
+bubbleIcon.Text = "⚔️"
+bubbleIcon.TextSize = 22
+bubbleIcon.Parent = bubbleBtn
+
+-- ==========================================
+-- 1. HÀM TẠO GẬY NEON (CÁN DÀI)
+-- ==========================================
+local function createRightStaff()
+	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+	if not rightHand then return end
+
+	local staffModel = Instance.new("Model")
+	staffModel.Name = "RightClientStaff"
+
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Shape = Enum.PartType.Cylinder
+	handle.Size = Vector3.new(2.5, 0.36, 0.36)
+	handle.Color = Color3.fromRGB(35, 35, 35)
+	handle.Material = Enum.Material.SmoothPlastic
+	handle.CanCollide = false
+	handle.Parent = staffModel
+
+	local rodLength = 12.0
+	local rodRadius = 0.35
+	
+	local rod = Instance.new("Part")
+	rod.Name = "Rod"
+	rod.Shape = Enum.PartType.Cylinder
+	rod.Size = Vector3.new(rodLength, rodRadius, rodRadius)
+	rod.Color = Color3.fromRGB(255, 255, 255)
+	rod.Material = Enum.Material.Neon
+	rod.CanCollide = false
+	rod.Parent = staffModel
+
+	local rodWeld = Instance.new("Weld")
+	rodWeld.Part0 = handle
+	rodWeld.Part1 = rod
+	rodWeld.Parent = handle
+
+	local cap1 = Instance.new("Part")
+	cap1.Name = "StaffCap1"
+	cap1.Shape = Enum.PartType.Ball
+	cap1.Size = Vector3.new(rodRadius, rodRadius, rodRadius)
+	cap1.Color = Color3.fromRGB(255, 255, 255)
+	cap1.Material = Enum.Material.Neon
+	cap1.CanCollide = false
+	cap1.Parent = staffModel
+
+	local cap1Weld = Instance.new("Weld")
+	cap1Weld.Part0 = rod
+	cap1Weld.Part1 = cap1
+	cap1Weld.C0 = CFrame.new(rodLength / 2, 0, 0)
+	cap1Weld.Parent = rod
+
+	local cap2 = Instance.new("Part")
+	cap2.Name = "StaffCap2"
+	cap2.Shape = Enum.PartType.Ball
+	cap2.Size = Vector3.new(rodRadius, rodRadius, rodRadius)
+	cap2.Color = Color3.fromRGB(255, 255, 255)
+	cap2.Material = Enum.Material.Neon
+	cap2.CanCollide = false
+	cap2.Parent = staffModel
+
+	local cap2Weld = Instance.new("Weld")
+	cap2Weld.Part0 = rod
+	cap2Weld.Part1 = cap2
+	cap2Weld.C0 = CFrame.new(-rodLength / 2, 0, 0)
+	cap2Weld.Parent = rod
+
+	local gripY = (rightHand.Name == "Right Arm") and -0.8 or -0.2
+	local motor = Instance.new("Motor6D")
+	motor.Name = "RightGrip"
+	motor.Part0 = rightHand
+	motor.Part1 = handle
+	motor.C0 = CFrame.new(0, gripY, 0) * CFrame.Angles(0, math.rad(90), math.rad(-15))
+	motor.Parent = handle
+
+	staffModel.Parent = character
+	return staffModel
+end
+
+-- ==========================================
+-- 2. HÀM TẠO BÚA LÒ XO
+-- ==========================================
+local function createSpringHammer()
+	local leftHand = character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm")
+	if not leftHand then return end
+
+	local hammerModel = Instance.new("Model")
+	hammerModel.Name = "SpringHammerModel"
+
+	local mainColor = Color3.fromRGB(35, 38, 45)
+	local glassMaterial = Enum.Material.Glass
+	local glassTrans = 0.55
+
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(6.5, 0.45, 0.45)
+	handle.Shape = Enum.PartType.Cylinder
+	handle.Color = mainColor
+	handle.Material = glassMaterial
+	handle.Transparency = glassTrans
+	handle.CanCollide = false
+	handle.Parent = hammerModel
+
+	local hammerBody = Instance.new("Part")
+	hammerBody.Name = "HammerBody"
+	hammerBody.Shape = Enum.PartType.Cylinder
+	hammerBody.Size = Vector3.new(2.8, 2.8, 2.8)
+	hammerBody.Color = mainColor
+	hammerBody.Material = glassMaterial
+	hammerBody.Transparency = glassTrans
+	hammerBody.CanCollide = false
+	hammerBody.Parent = hammerModel
+
+	local bodyWeld = Instance.new("Weld")
+	bodyWeld.Part0 = handle
+	bodyWeld.Part1 = hammerBody
+	bodyWeld.C0 = CFrame.new(-2.2, 0, 0) * CFrame.Angles(0, 0, math.rad(90))
+	bodyWeld.Parent = handle
+
+	local steps = 5
+	local baseOffset = 1.4
+	local totalThickness = 0.8
+
+	for _, dir in ipairs({1, -1}) do
+		for i = 1, steps do
+			local alpha = i / steps
+			local thickness = totalThickness / steps
+			local currentDiameter = 2.8 * (1 - alpha * 0.42)
+			local distOffset = baseOffset + (i - 0.5) * thickness
+
+			local capSegment = Instance.new("Part")
+			capSegment.Name = "TaperedCap"
+			capSegment.Shape = Enum.PartType.Cylinder
+			capSegment.Size = Vector3.new(thickness, currentDiameter, currentDiameter)
+			capSegment.Color = mainColor
+			capSegment.Material = glassMaterial
+			capSegment.Transparency = glassTrans
+			capSegment.CanCollide = false
+			capSegment.Parent = hammerModel
+
+			local capWeld = Instance.new("Weld")
+			capWeld.Part0 = hammerBody
+			capWeld.Part1 = capSegment
+			capWeld.C0 = CFrame.new(dir * distOffset, 0, 0)
+			capWeld.Parent = hammerBody
+		end
+	end
+
+	local centerBelt = Instance.new("Part")
+	centerBelt.Name = "CenterBelt"
+	centerBelt.Shape = Enum.PartType.Cylinder
+	centerBelt.Size = Vector3.new(0.9, 3.0, 3.0)
+	centerBelt.Color = Color3.fromRGB(20, 22, 28)
+	centerBelt.Material = Enum.Material.SmoothPlastic
+	centerBelt.Transparency = 0.2
+	centerBelt.CanCollide = false
+	centerBelt.Parent = hammerModel
+
+	local beltWeld = Instance.new("Weld")
+	beltWeld.Part0 = hammerBody
+	beltWeld.Part1 = centerBelt
+	beltWeld.C0 = CFrame.new(0, 0, 0)
+	beltWeld.Parent = hammerBody
+
+	for i = 1, 8 do
+		local spike = Instance.new("Part")
+		spike.Name = "Spike"
+		spike.Size = Vector3.new(0.35, 0.35, 0.35)
+		spike.Color = Color3.fromRGB(15, 15, 18)
+		spike.Material = Enum.Material.SmoothPlastic
+		spike.CanCollide = false
+		spike.Parent = hammerModel
+
+		local angle = math.rad(i * (360 / 8))
+		local xOffset = math.cos(angle) * 1.55
+		local zOffset = math.sin(angle) * 1.55
+
+		local spikeWeld = Instance.new("Weld")
+		spikeWeld.Part0 = centerBelt
+		spikeWeld.Part1 = spike
+		spikeWeld.C0 = CFrame.new(0, xOffset, zOffset) * CFrame.Angles(angle, 0, 0)
+		spikeWeld.Parent = centerBelt
+	end
+
+	local coilCount = 20
+	for i = 1, coilCount do
+		local coilPart = Instance.new("Part")
+		coilPart.Name = "CoilSegment"
+		coilPart.Shape = Enum.PartType.Cylinder
+		coilPart.Size = Vector3.new(0.35, 0.25, 0.25)
+		coilPart.Color = Color3.fromRGB(15, 15, 15)
+		coilPart.Material = Enum.Material.SmoothPlastic
+		coilPart.Transparency = 0.1
+		coilPart.CanCollide = false
+		coilPart.Parent = hammerModel
+
+		local progress = (i / coilCount) - 0.5
+		local yPos = progress * 3.6
+		local angle = progress * math.pi * 6.5
+		local radius = 1.52
+
+		local xPos = math.cos(angle) * radius
+		local zPos = math.sin(angle) * radius
+
+		local coilWeld = Instance.new("Weld")
+		coilWeld.Part0 = hammerBody
+		coilWeld.Part1 = coilPart
+		coilWeld.C0 = CFrame.new(yPos, xPos, zPos) * CFrame.Angles(angle, 0, math.rad(90))
+		coilWeld.Parent = hammerBody
+	end
+
+	local gripY = (leftHand.Name == "Left Arm") and -0.8 or -0.2
+	local motor = Instance.new("Motor6D")
+	motor.Name = "LeftGrip"
+	motor.Part0 = leftHand
+	motor.Part1 = handle
+	motor.C0 = CFrame.new(0.2, gripY, -0.6) * CFrame.Angles(math.rad(10), math.rad(-95), math.rad(15))
+	motor.Parent = handle
+
+	hammerModel.Parent = character
+	return hammerModel
+end
+
+-- ==========================================
+-- 3. HÀM TẠO DUAL KARAMBIT
+-- ==========================================
+local function createSingleKarambit(handPart, isLeft)
+	local model = Instance.new("Model")
+	model.Name = isLeft and "Karambit_L" or "Karambit_R"
+
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(0.2, 0.7, 0.25)
+	handle.Color = Color3.fromRGB(25, 25, 25)
+	handle.Material = Enum.Material.SmoothPlastic
+	handle.CanCollide = false
+	handle.Parent = model
+
+	local ring = Instance.new("Part")
+	ring.Name = "Ring"
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Size = Vector3.new(0.12, 0.3, 0.3)
+	ring.Color = Color3.fromRGB(15, 15, 15)
+	ring.Material = Enum.Material.SmoothPlastic
+	ring.CanCollide = false
+	ring.Parent = model
+
+	local ringWeld = Instance.new("Weld")
+	ringWeld.Part0 = handle
+	ringWeld.Part1 = ring
+	ringWeld.C0 = CFrame.new(0, -0.4, 0) * CFrame.Angles(0, 0, math.rad(90))
+	ringWeld.Parent = handle
+
+	local bladeSegments = 6
+	local prevPart = handle
+	local curOffset = CFrame.new(0, 0.3, 0)
+
+	for i = 1, bladeSegments do
+		local alpha = i / bladeSegments
+		local bladePart = Instance.new("Part")
+		bladePart.Name = "BladePart"
+		bladePart.Size = Vector3.new(0.06, 0.2, 0.22 - (alpha * 0.14))
+		bladePart.Color = Color3.fromRGB(180, 180, 185)
+		bladePart.Material = Enum.Material.Metal
+		bladePart.CanCollide = false
+		bladePart.Parent = model
+
+		local curveAngle = math.rad(-15)
+		local weld = Instance.new("Weld")
+		weld.Part0 = prevPart
+		if i == 1 then
+			weld.Part1 = bladePart
+			weld.C0 = curOffset * CFrame.Angles(curveAngle, 0, 0)
+		else
+			weld.Part1 = bladePart
+			weld.C0 = CFrame.new(0, 0.16, -0.03) * CFrame.Angles(curveAngle, 0, 0)
+		end
+		weld.Parent = prevPart
+		prevPart = bladePart
+	end
+
+	local isR6 = (handPart.Name == "Right Arm" or handPart.Name == "Left Arm")
+	local yOffset = isR6 and -0.85 or -0.1
+
+	local motor = Instance.new("Motor6D")
+	motor.Name = isLeft and "KarambitLeftGrip" or "KarambitRightGrip"
+	motor.Part0 = handPart
+	motor.Part1 = handle
+	motor.C0 = CFrame.new(0, yOffset, 0) * CFrame.Angles(math.rad(90), math.rad(180), math.rad(isLeft and -15 or 15))
+	motor.Parent = handle
+
+	model.Parent = character
+	return model
+end
+
+local function createDualKarambit()
+	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+	local leftHand = character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm")
+	
+	local dualContainer = Instance.new("Model")
+	dualContainer.Name = "DualKarambitModel"
+
+	if rightHand then
+		local kRight = createSingleKarambit(rightHand, false)
+		kRight.Parent = dualContainer
+	end
+
+	if leftHand then
+		local kLeft = createSingleKarambit(leftHand, true)
+		kLeft.Parent = dualContainer
+	end
+
+	dualContainer.Parent = character
+	return dualContainer
+end
