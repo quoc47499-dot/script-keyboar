@@ -143,7 +143,7 @@ bubbleIcon.TextSize = 22
 bubbleIcon.Parent = bubbleBtn
 
 -- ==========================================
--- 1. HÀM TẠO GẬY NEON (CÁN DÀI)
+-- 1. HÀM TẠO GẬY NEON (CÁN ĐÃ KÉO DÀI)
 -- ==========================================
 local function createRightStaff()
 	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
@@ -152,6 +152,7 @@ local function createRightStaff()
 	local staffModel = Instance.new("Model")
 	staffModel.Name = "RightClientStaff"
 
+	-- Cán gậy màu xám đậm đã kéo dài từ 1.0 lên 2.5
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
 	handle.Shape = Enum.PartType.Cylinder
@@ -456,3 +457,158 @@ local function createDualKarambit()
 	dualContainer.Parent = character
 	return dualContainer
 end
+
+-- ==========================================
+-- 4. TÍNH NĂNG XOAY GẬY TÔN NGỘ KHÔNG (2 TAY)
+-- ==========================================
+local function updateSpinning(dt)
+	if not isSpinning or not currentRightStaff then return end
+	local handle = currentRightStaff:FindFirstChild("Handle")
+	if not handle then return end
+
+	local motor = handle:FindFirstChild("RightGrip")
+	local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+	
+	if motor and torso and rightHand then
+		-- Tự động di chuyển gậy ra phía trước ngực (giữa 2 tay) và quay tít liên tục
+		local spinSpeed = 25 -- Tốc độ quay
+		local angle = (tick() * spinSpeed) % (math.pi * 2)
+
+		-- Đặt gốc gậy vào ngực nhân vật và xoay tròn
+		motor.Part0 = torso
+		motor.C0 = CFrame.new(0, 0, -1.8) * CFrame.Angles(0, angle, math.rad(90))
+	end
+end
+
+local function startSpin()
+	if not isRightStaffOn then
+		-- Tự mở gậy nếu chưa bật
+		isRightStaffOn = true
+		rightToggleBtn.Text = "Right Staff: ON"
+		rightToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		currentRightStaff = createRightStaff()
+	end
+
+	isSpinning = true
+	spinToggleBtn.Text = "Spin Staff: ON"
+	spinToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+
+	if not spinConnection then
+		spinConnection = RunService.RenderStepped:Connect(updateSpinning)
+	end
+end
+
+local function stopSpin()
+	isSpinning = false
+	spinToggleBtn.Text = "Spin Staff: OFF"
+	spinToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+
+	if spinConnection then
+		spinConnection:Disconnect()
+		spinConnection = nil
+	end
+
+	-- Trả gậy về tay phải như cũ
+	if currentRightStaff then
+		local handle = currentRightStaff:FindFirstChild("Handle")
+		local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+		if handle and rightHand then
+			local motor = handle:FindFirstChild("RightGrip")
+			if motor then
+				local gripY = (rightHand.Name == "Right Arm") and -0.8 or -0.2
+				motor.Part0 = rightHand
+				motor.C0 = CFrame.new(0, gripY, 0) * CFrame.Angles(0, math.rad(90), math.rad(-15))
+			end
+		end
+	end
+end
+
+-- ==========================================
+-- SỰ KIỆN NÚT BẤM GUI
+-- ==========================================
+rightToggleBtn.MouseButton1Click:Connect(function()
+	isRightStaffOn = not isRightStaffOn
+	if isRightStaffOn then
+		rightToggleBtn.Text = "Right Staff: ON"
+		rightToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		currentRightStaff = createRightStaff()
+	else
+		rightToggleBtn.Text = "Right Staff: OFF"
+		rightToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		if isSpinning then stopSpin() end
+		if currentRightStaff then
+			currentRightStaff:Destroy()
+			currentRightStaff = nil
+		end
+	end
+end)
+
+leftToggleBtn.MouseButton1Click:Connect(function()
+	isLeftHammerOn = not isLeftHammerOn
+	if isLeftHammerOn then
+		leftToggleBtn.Text = "Spring Hammer: ON"
+		leftToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		currentLeftHammer = createSpringHammer()
+	else
+		leftToggleBtn.Text = "Spring Hammer: OFF"
+		leftToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		if currentLeftHammer then
+			currentLeftHammer:Destroy()
+			currentLeftHammer = nil
+		end
+	end
+end)
+
+karambitToggleBtn.MouseButton1Click:Connect(function()
+	isDualKarambitOn = not isDualKarambitOn
+	if isDualKarambitOn then
+		karambitToggleBtn.Text = "Dual Karambit: ON"
+		karambitToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		currentDualKarambit = createDualKarambit()
+	else
+		karambitToggleBtn.Text = "Dual Karambit: OFF"
+		karambitToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		if currentDualKarambit then
+			currentDualKarambit:Destroy()
+			currentDualKarambit = nil
+		end
+	end
+end)
+
+spinToggleBtn.MouseButton1Click:Connect(function()
+	if isSpinning then
+		stopSpin()
+	else
+		startSpin()
+	end
+end)
+
+minimizeBtn.MouseButton1Click:Connect(function()
+	mainFrame.Visible = false
+	bubbleBtn.Visible = true
+end)
+
+bubbleBtn.MouseButton1Click:Connect(function()
+	bubbleBtn.Visible = false
+	mainFrame.Visible = true
+end)
+
+player.CharacterAdded:Connect(function(newChar)
+	character = newChar
+	currentRightStaff = nil
+	currentLeftHammer = nil
+	currentDualKarambit = nil
+	stopSpin()
+	
+	task.wait(0.5)
+	if isRightStaffOn then
+		currentRightStaff = createRightStaff()
+	end
+	if isLeftHammerOn then
+		currentLeftHammer = createSpringHammer()
+	end
+	if isDualKarambitOn then
+		currentDualKarambit = createDualKarambit()
+	end
+end)
