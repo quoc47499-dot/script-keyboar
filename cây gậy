@@ -1,22 +1,6 @@
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
 
--- Trạng thái Bật/Tắt riêng lẻ từng tính năng
-local isRightStaffOn = false
-local isLeftHammerOn = false
-local isDualKarambitOn = false
-local isSpinning = false
-
-local currentRightStaff = nil
-local currentLeftHammer = nil
-local currentDualKarambit = nil
-local spinConnection = nil
-
--- ==========================================
--- GIAO DIỆN GUI (NÚT BẬT/TẮT RIÊNG LẺ)
--- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "WeaponControlGui"
 screenGui.ResetOnSpawn = false
@@ -24,7 +8,7 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 200, 0, 260)
+mainFrame.Size = UDim2.new(0, 200, 0, 360)
 mainFrame.Position = UDim2.new(0.5, -100, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
@@ -60,67 +44,30 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 6)
 minCorner.Parent = minimizeBtn
 
--- 1. Nút Gậy Tay Phải
-local rightToggleBtn = Instance.new("TextButton")
-rightToggleBtn.Size = UDim2.new(0.85, 0, 0, 34)
-rightToggleBtn.Position = UDim2.new(0.075, 0, 0.15, 0)
-rightToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-rightToggleBtn.Text = "Right Staff: OFF"
-rightToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-rightToggleBtn.TextSize = 13
-rightToggleBtn.Font = Enum.Font.SourceSansBold
-rightToggleBtn.Parent = mainFrame
+local function createButton(posY, text)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.85, 0, 0, 32)
+	btn.Position = UDim2.new(0.075, 0, posY, 0)
+	btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.TextSize = 13
+	btn.Font = Enum.Font.SourceSansBold
+	btn.Parent = mainFrame
 
-local rightCorner = Instance.new("UICorner")
-rightCorner.CornerRadius = UDim.new(0, 8)
-rightCorner.Parent = rightToggleBtn
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = btn
+	return btn
+end
 
--- 2. Nút BÚA LÒ XO Tay Trái
-local leftToggleBtn = Instance.new("TextButton")
-leftToggleBtn.Size = UDim2.new(0.85, 0, 0, 34)
-leftToggleBtn.Position = UDim2.new(0.075, 0, 0.32, 0)
-leftToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-leftToggleBtn.Text = "Spring Hammer: OFF"
-leftToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-leftToggleBtn.TextSize = 13
-leftToggleBtn.Font = Enum.Font.SourceSansBold
-leftToggleBtn.Parent = mainFrame
+local rightToggleBtn = createButton(0.10, "Right Staff: OFF")
+local leftToggleBtn = createButton(0.22, "Spring Hammer: OFF")
+local karambitToggleBtn = createButton(0.34, "Dual Karambit: OFF")
+local swordsToggleBtn = createButton(0.46, "Dual Swords: OFF")
+local spinToggleBtn = createButton(0.58, "Spin Staff: OFF")
+local slippersToggleBtn = createButton(0.70, "Slippers: OFF")
 
-local leftCorner = Instance.new("UICorner")
-leftCorner.CornerRadius = UDim.new(0, 8)
-leftCorner.Parent = leftToggleBtn
-
--- 3. Nút DUAL KARAMBIT
-local karambitToggleBtn = Instance.new("TextButton")
-karambitToggleBtn.Size = UDim2.new(0.85, 0, 0, 34)
-karambitToggleBtn.Position = UDim2.new(0.075, 0, 0.49, 0)
-karambitToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-karambitToggleBtn.Text = "Dual Karambit: OFF"
-karambitToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-karambitToggleBtn.TextSize = 13
-karambitToggleBtn.Font = Enum.Font.SourceSansBold
-karambitToggleBtn.Parent = mainFrame
-
-local karambitCorner = Instance.new("UICorner")
-karambitCorner.CornerRadius = UDim.new(0, 8)
-karambitCorner.Parent = karambitToggleBtn
-
--- 4. Nút XOAY GẬY TÔN NGỘ KHÔNG
-local spinToggleBtn = Instance.new("TextButton")
-spinToggleBtn.Size = UDim2.new(0.85, 0, 0, 34)
-spinToggleBtn.Position = UDim2.new(0.075, 0, 0.66, 0)
-spinToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-spinToggleBtn.Text = "Spin Staff: OFF"
-spinToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-spinToggleBtn.TextSize = 13
-spinToggleBtn.Font = Enum.Font.SourceSansBold
-spinToggleBtn.Parent = mainFrame
-
-local spinCorner = Instance.new("UICorner")
-spinCorner.CornerRadius = UDim.new(0, 8)
-spinCorner.Parent = spinToggleBtn
-
--- Nút bong bóng thu nhỏ
 local bubbleBtn = Instance.new("ImageButton")
 bubbleBtn.Name = "BubbleButton"
 bubbleBtn.Size = UDim2.new(0, 45, 0, 45)
@@ -142,9 +89,28 @@ bubbleIcon.Text = "⚔️"
 bubbleIcon.TextSize = 22
 bubbleIcon.Parent = bubbleBtn
 
--- ==========================================
--- 1. HÀM TẠO GẬY NEON (CÁN ĐÃ KÉO DÀI)
--- ==========================================
+minimizeBtn.MouseButton1Click:Connect(function()
+	mainFrame.Visible = false
+	bubbleBtn.Visible = true
+end)
+
+bubbleBtn.MouseButton1Click:Connect(function()
+	bubbleBtn.Visible = false
+	mainFrame.Visible = true
+end)
+
+-- Xuất các nút ra biến toàn cục (_G)
+_G.RightBtn = rightToggleBtn
+_G.LeftBtn = leftToggleBtn
+_G.KarambitBtn = karambitToggleBtn
+_G.SwordsBtn = swordsToggleBtn
+_G.SpinBtn = spinToggleBtn
+_G.SlippersBtn = slippersToggleBtn
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
 local function createRightStaff()
 	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	if not rightHand then return end
@@ -152,7 +118,6 @@ local function createRightStaff()
 	local staffModel = Instance.new("Model")
 	staffModel.Name = "RightClientStaff"
 
-	-- Cán gậy màu xám đậm đã kéo dài từ 1.0 lên 2.5
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
 	handle.Shape = Enum.PartType.Cylinder
@@ -221,9 +186,6 @@ local function createRightStaff()
 	return staffModel
 end
 
--- ==========================================
--- 2. HÀM TẠO BÚA LÒ XO
--- ==========================================
 local function createSpringHammer()
 	local leftHand = character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm")
 	if not leftHand then return end
@@ -365,9 +327,108 @@ local function createSpringHammer()
 	return hammerModel
 end
 
--- ==========================================
--- 3. HÀM TẠO DUAL KARAMBIT
--- ==========================================
+local function createSingleSlipper(footPart, isLeft)
+	local model = Instance.new("Model")
+	model.Name = isLeft and "Slipper_L" or "Slipper_R"
+
+	local sole = Instance.new("Part")
+	sole.Name = "Sole"
+	sole.Size = Vector3.new(1.0, 0.18, 1.35)
+	sole.Color = Color3.fromRGB(35, 35, 35)
+	sole.Material = Enum.Material.SmoothPlastic
+	sole.CanCollide = false
+	sole.Parent = model
+
+	local strap = Instance.new("Part")
+	strap.Name = "Strap"
+	strap.Size = Vector3.new(1.02, 0.35, 0.65)
+	strap.Color = Color3.fromRGB(40, 40, 40)
+	strap.Material = Enum.Material.SmoothPlastic
+	strap.CanCollide = false
+	strap.Parent = model
+
+	local strapWeld = Instance.new("Weld")
+	strapWeld.Part0 = sole
+	strapWeld.Part1 = strap
+	strapWeld.C0 = CFrame.new(0, 0.22, -0.05) * CFrame.Angles(math.rad(15), 0, 0)
+	strapWeld.Parent = sole
+
+	local redStripe = Instance.new("Part")
+	redStripe.Name = "RedStripe"
+	redStripe.Size = Vector3.new(1.03, 0.37, 0.22)
+	redStripe.Color = Color3.fromRGB(220, 40, 40)
+	redStripe.Material = Enum.Material.SmoothPlastic
+	redStripe.CanCollide = false
+	redStripe.Parent = model
+
+	local redWeld = Instance.new("Weld")
+	redWeld.Part0 = strap
+	redWeld.Part1 = redStripe
+	redWeld.C0 = CFrame.new(0, 0, 0)
+	redWeld.Parent = strap
+
+	for _, zOffset in ipairs({-0.14, 0.14}) do
+		local greenStripe = Instance.new("Part")
+		greenStripe.Name = "GreenStripe"
+		greenStripe.Size = Vector3.new(1.03, 0.37, 0.1)
+		greenStripe.Color = Color3.fromRGB(15, 130, 50)
+		greenStripe.Material = Enum.Material.SmoothPlastic
+		greenStripe.CanCollide = false
+		greenStripe.Parent = model
+
+		local gWeld = Instance.new("Weld")
+		gWeld.Part0 = strap
+		gWeld.Part1 = greenStripe
+		gWeld.C0 = CFrame.new(0, 0, zOffset)
+		gWeld.Parent = strap
+	end
+
+	local sock = Instance.new("Part")
+	sock.Name = "WhiteSock"
+	sock.Size = Vector3.new(0.92, 0.45, 1.2)
+	sock.Color = Color3.fromRGB(245, 240, 230)
+	sock.Material = Enum.Material.SmoothPlastic
+	sock.CanCollide = false
+	sock.Parent = model
+
+	local sockWeld = Instance.new("Weld")
+	sockWeld.Part0 = sole
+	sockWeld.Part1 = sock
+	sockWeld.C0 = CFrame.new(0, 0.3, 0.05)
+	sockWeld.Parent = sole
+
+	local isR6 = (footPart.Name == "Right Leg" or footPart.Name == "Left Leg")
+	local yOffset = isR6 and -1.0 or -0.32
+
+	local motor = Instance.new("Motor6D")
+	motor.Name = isLeft and "SlipperLeftGrip" or "SlipperRightGrip"
+	motor.Part0 = footPart
+	motor.Part1 = sole
+	motor.C0 = CFrame.new(0, yOffset, 0.05)
+	motor.Parent = sole
+
+	model.Parent = character
+	return model
+end
+
+local function createDualSlippers()
+	local rightFoot = character:FindFirstChild("RightFoot") or character:FindFirstChild("Right Leg")
+	local leftFoot = character:FindFirstChild("LeftFoot") or character:FindFirstChild("Left Leg")
+	
+	local dualContainer = Instance.new("Model")
+	dualContainer.Name = "DualSlippersModel"
+
+	if rightFoot then
+		createSingleSlipper(rightFoot, false).Parent = dualContainer
+	end
+	if leftFoot then
+		createSingleSlipper(leftFoot, true).Parent = dualContainer
+	end
+
+	dualContainer.Parent = character
+	return dualContainer
+end
+
 local function createSingleKarambit(handPart, isLeft)
 	local model = Instance.new("Model")
 	model.Name = isLeft and "Karambit_L" or "Karambit_R"
@@ -445,22 +506,136 @@ local function createDualKarambit()
 	dualContainer.Name = "DualKarambitModel"
 
 	if rightHand then
-		local kRight = createSingleKarambit(rightHand, false)
-		kRight.Parent = dualContainer
+		createSingleKarambit(rightHand, false).Parent = dualContainer
 	end
-
 	if leftHand then
-		local kLeft = createSingleKarambit(leftHand, true)
-		kLeft.Parent = dualContainer
+		createSingleKarambit(leftHand, true).Parent = dualContainer
 	end
 
 	dualContainer.Parent = character
 	return dualContainer
 end
 
--- ==========================================
--- 4. TÍNH NĂNG XOAY GẬY TÔN NGỘ KHÔNG (2 TAY)
--- ==========================================
+local function createSingleBlackSword(handPart, isLeft)
+	local model = Instance.new("Model")
+	model.Name = isLeft and "BlackSword_L" or "BlackSword_R"
+
+	local blackColor = Color3.fromRGB(15, 15, 15)
+
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(0.2, 0.8, 0.2)
+	handle.Color = blackColor
+	handle.Material = Enum.Material.SmoothPlastic
+	handle.CanCollide = false
+	handle.Parent = model
+
+	local guard = Instance.new("Part")
+	guard.Name = "Guard"
+	guard.Size = Vector3.new(0.4, 0.1, 0.25)
+	guard.Color = blackColor
+	guard.Material = Enum.Material.SmoothPlastic
+	guard.CanCollide = false
+	guard.Parent = model
+
+	local guardWeld = Instance.new("Weld")
+	guardWeld.Part0 = handle
+	guardWeld.Part1 = guard
+	guardWeld.C0 = CFrame.new(0, 0.4, 0)
+	guardWeld.Parent = handle
+
+	local blade = Instance.new("Part")
+	blade.Name = "Blade"
+	blade.Size = Vector3.new(0.35, 2.2, 0.12)
+	blade.Color = blackColor
+	blade.Material = Enum.Material.SmoothPlastic
+	local guard = Instance.new("Part")
+	guard.Name = "Guard"
+	guard.Size = Vector3.new(0.4, 0.1, 0.25)
+	guard.Color = blackColor
+	guard.Material = Enum.Material.SmoothPlastic
+	guard.CanCollide = false
+	guard.Parent = model
+
+	local guardWeld = Instance.new("Weld")
+	guardWeld.Part0 = handle
+	guardWeld.Part1 = guard
+	guardWeld.C0 = CFrame.new(0, 0.4, 0)
+	guardWeld.Parent = handle
+
+	local blade = Instance.new("Part")
+	blade.Name = "Blade"
+	blade.Size = Vector3.new(0.35, 2.2, 0.12)
+	blade.Color = blackColor
+	blade.Material = Enum.Material.SmoothPlastic
+	blade.CanCollide = false
+	blade.Parent = model
+
+	local bladeWeld = Instance.new("Weld")
+	bladeWeld.Part0 = guard
+	bladeWeld.Part1 = blade
+	bladeWeld.C0 = CFrame.new(0, 1.1, 0)
+	bladeWeld.Parent = guard
+
+	local tip = Instance.new("WedgePart")
+	tip.Name = "Tip"
+	tip.Size = Vector3.new(0.35, 0.4, 0.12)
+	tip.Color = blackColor
+	tip.Material = Enum.Material.SmoothPlastic
+	tip.CanCollide = false
+	tip.Parent = model
+
+	local tipWeld = Instance.new("Weld")
+	tipWeld.Part0 = blade
+	tipWeld.Part1 = tip
+	tipWeld.C0 = CFrame.new(0, 1.3, 0) * CFrame.Angles(0, math.rad(180), 0)
+	tipWeld.Parent = blade
+
+	local isR6 = (handPart.Name == "Right Arm" or handPart.Name == "Left Arm")
+	local yOffset = isR6 and -0.85 or -0.1
+
+	local motor = Instance.new("Motor6D")
+	motor.Name = isLeft and "SwordLeftGrip" or "SwordRightGrip"
+	motor.Part0 = handPart
+	motor.Part1 = handle
+	motor.C0 = CFrame.new(0, yOffset, 0) * CFrame.Angles(math.rad(90), 0, math.rad(180))
+	motor.Parent = handle
+
+	model.Parent = character
+	return model
+end
+
+local function createDualSwords()
+	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+	local leftHand = character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm")
+	
+	local dualContainer = Instance.new("Model")
+	dualContainer.Name = "DualSwordsModel"
+
+	if rightHand then
+		createSingleBlackSword(rightHand, false).Parent = dualContainer
+	end
+	if leftHand then
+		createSingleBlackSword(leftHand, true).Parent = dualContainer
+	end
+
+	dualContainer.Parent = character
+	return dualContainer
+end
+local isRightStaffOn = false
+local isLeftHammerOn = false
+local isDualKarambitOn = false
+local isDualSwordsOn = false
+local isSlippersOn = false
+local isSpinning = false
+
+local currentRightStaff = nil
+local currentLeftHammer = nil
+local currentDualKarambit = nil
+local currentDualSwords = nil
+local currentSlippers = nil
+local spinConnection = nil
+
 local function updateSpinning(dt)
 	if not isSpinning or not currentRightStaff then return end
 	local handle = currentRightStaff:FindFirstChild("Handle")
@@ -468,14 +643,10 @@ local function updateSpinning(dt)
 
 	local motor = handle:FindFirstChild("RightGrip")
 	local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	
-	if motor and torso and rightHand then
-		-- Tự động di chuyển gậy ra phía trước ngực (giữa 2 tay) và quay tít liên tục
-		local spinSpeed = 25 -- Tốc độ quay
+	if motor and torso then
+		local spinSpeed = 25
 		local angle = (tick() * spinSpeed) % (math.pi * 2)
-
-		-- Đặt gốc gậy vào ngực nhân vật và xoay tròn
 		motor.Part0 = torso
 		motor.C0 = CFrame.new(0, 0, -1.8) * CFrame.Angles(0, angle, math.rad(90))
 	end
@@ -483,16 +654,19 @@ end
 
 local function startSpin()
 	if not isRightStaffOn then
-		-- Tự mở gậy nếu chưa bật
 		isRightStaffOn = true
-		rightToggleBtn.Text = "Right Staff: ON"
-		rightToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		if _G.RightBtn then
+			_G.RightBtn.Text = "Right Staff: ON"
+			_G.RightBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		end
 		currentRightStaff = createRightStaff()
 	end
 
 	isSpinning = true
-	spinToggleBtn.Text = "Spin Staff: ON"
-	spinToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+	if _G.SpinBtn then
+		_G.SpinBtn.Text = "Spin Staff: ON"
+		_G.SpinBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+	end
 
 	if not spinConnection then
 		spinConnection = RunService.RenderStepped:Connect(updateSpinning)
@@ -501,15 +675,16 @@ end
 
 local function stopSpin()
 	isSpinning = false
-	spinToggleBtn.Text = "Spin Staff: OFF"
-	spinToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	if _G.SpinBtn then
+		_G.SpinBtn.Text = "Spin Staff: OFF"
+		_G.SpinBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	end
 
 	if spinConnection then
 		spinConnection:Disconnect()
 		spinConnection = nil
 	end
 
-	-- Trả gậy về tay phải như cũ
 	if currentRightStaff then
 		local handle = currentRightStaff:FindFirstChild("Handle")
 		local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
@@ -524,74 +699,78 @@ local function stopSpin()
 	end
 end
 
--- ==========================================
--- SỰ KIỆN NÚT BẤM GUI
--- ==========================================
-rightToggleBtn.MouseButton1Click:Connect(function()
-	isRightStaffOn = not isRightStaffOn
-	if isRightStaffOn then
-		rightToggleBtn.Text = "Right Staff: ON"
-		rightToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-		currentRightStaff = createRightStaff()
-	else
-		rightToggleBtn.Text = "Right Staff: OFF"
-		rightToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-		if isSpinning then stopSpin() end
-		if currentRightStaff then
-			currentRightStaff:Destroy()
-			currentRightStaff = nil
+task.spawn(function()
+	while not _G.RightBtn do task.wait(0.1) end
+
+	_G.RightBtn.MouseButton1Click:Connect(function()
+		isRightStaffOn = not isRightStaffOn
+		if isRightStaffOn then
+			_G.RightBtn.Text = "Right Staff: ON"
+			_G.RightBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+			currentRightStaff = createRightStaff()
+		else
+			_G.RightBtn.Text = "Right Staff: OFF"
+			_G.RightBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+			if isSpinning then stopSpin() end
+			if currentRightStaff then currentRightStaff:Destroy(); currentRightStaff = nil end
 		end
-	end
-end)
+	end)
 
-leftToggleBtn.MouseButton1Click:Connect(function()
-	isLeftHammerOn = not isLeftHammerOn
-	if isLeftHammerOn then
-		leftToggleBtn.Text = "Spring Hammer: ON"
-		leftToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-		currentLeftHammer = createSpringHammer()
-	else
-		leftToggleBtn.Text = "Spring Hammer: OFF"
-		leftToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-		if currentLeftHammer then
-			currentLeftHammer:Destroy()
-			currentLeftHammer = nil
+	_G.LeftBtn.MouseButton1Click:Connect(function()
+		isLeftHammerOn = not isLeftHammerOn
+		if isLeftHammerOn then
+			_G.LeftBtn.Text = "Spring Hammer: ON"
+			_G.LeftBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+			currentLeftHammer = createSpringHammer()
+		else
+			_G.LeftBtn.Text = "Spring Hammer: OFF"
+			_G.LeftBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+			if currentLeftHammer then currentLeftHammer:Destroy(); currentLeftHammer = nil end
 		end
-	end
-end)
+	end)
 
-karambitToggleBtn.MouseButton1Click:Connect(function()
-	isDualKarambitOn = not isDualKarambitOn
-	if isDualKarambitOn then
-		karambitToggleBtn.Text = "Dual Karambit: ON"
-		karambitToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-		currentDualKarambit = createDualKarambit()
-	else
-		karambitToggleBtn.Text = "Dual Karambit: OFF"
-		karambitToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-		if currentDualKarambit then
-			currentDualKarambit:Destroy()
-			currentDualKarambit = nil
+	_G.KarambitBtn.MouseButton1Click:Connect(function()
+		isDualKarambitOn = not isDualKarambitOn
+		if isDualKarambitOn then
+			_G.KarambitBtn.Text = "Dual Karambit: ON"
+			_G.KarambitBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+			currentDualKarambit = createDualKarambit()
+		else
+			_G.KarambitBtn.Text = "Dual Karambit: OFF"
+			_G.KarambitBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+			if currentDualKarambit then currentDualKarambit:Destroy(); currentDualKarambit = nil end
 		end
-	end
-end)
+	end)
 
-spinToggleBtn.MouseButton1Click:Connect(function()
-	if isSpinning then
-		stopSpin()
-	else
-		startSpin()
-	end
-end)
+	_G.SwordsBtn.MouseButton1Click:Connect(function()
+		isDualSwordsOn = not isDualSwordsOn
+		if isDualSwordsOn then
+			_G.SwordsBtn.Text = "Dual Swords: ON"
+			_G.SwordsBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+			currentDualSwords = createDualSwords()
+		else
+			_G.SwordsBtn.Text = "Dual Swords: OFF"
+			_G.SwordsBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+			if currentDualSwords then currentDualSwords:Destroy(); currentDualSwords = nil end
+		end
+	end)
 
-minimizeBtn.MouseButton1Click:Connect(function()
-	mainFrame.Visible = false
-	bubbleBtn.Visible = true
-end)
+	_G.SpinBtn.MouseButton1Click:Connect(function()
+		if isSpinning then stopSpin() else startSpin() end
+	end)
 
-bubbleBtn.MouseButton1Click:Connect(function()
-	bubbleBtn.Visible = false
-	mainFrame.Visible = true
+	_G.SlippersBtn.MouseButton1Click:Connect(function()
+		isSlippersOn = not isSlippersOn
+		if isSlippersOn then
+			_G.SlippersBtn.Text = "Slippers: ON"
+			_G.SlippersBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+			currentSlippers = createDualSlippers()
+		else
+			_G.SlippersBtn.Text = "Slippers: OFF"
+			_G.SlippersBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+			if currentSlippers then currentSlippers:Destroy(); currentSlippers = nil end
+		end
+	end)
 end)
 
 player.CharacterAdded:Connect(function(newChar)
@@ -599,16 +778,14 @@ player.CharacterAdded:Connect(function(newChar)
 	currentRightStaff = nil
 	currentLeftHammer = nil
 	currentDualKarambit = nil
+	currentDualSwords = nil
+	currentSlippers = nil
 	stopSpin()
 	
 	task.wait(0.5)
-	if isRightStaffOn then
-		currentRightStaff = createRightStaff()
-	end
-	if isLeftHammerOn then
-		currentLeftHammer = createSpringHammer()
-	end
-	if isDualKarambitOn then
-		currentDualKarambit = createDualKarambit()
-	end
+	if isRightStaffOn then currentRightStaff = createRightStaff() end
+	if isLeftHammerOn then currentLeftHammer = createSpringHammer() end
+	if isDualKarambitOn then currentDualKarambit = createDualKarambit() end
+	if isDualSwordsOn then currentDualSwords = createDualSwords() end
+	if isSlippersOn then currentSlippers = createDualSlippers() end
 end)
