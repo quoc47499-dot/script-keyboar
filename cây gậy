@@ -1,15 +1,22 @@
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- ==========================================
+-- TẠO GIAO DIỆN GUI (WEAPON & SWORD HUB)
+-- ==========================================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "WeaponControlGui"
+screenGui.Name = "MasterWeaponControlGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 200, 0, 360)
-mainFrame.Position = UDim2.new(0.5, -100, 0.15, 0)
+mainFrame.Size = UDim2.new(0, 230, 0, 520)
+mainFrame.Position = UDim2.new(0.5, -115, 0.1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -23,9 +30,9 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -30, 0, 30)
 title.Position = UDim2.new(0, 10, 0, 5)
 title.BackgroundTransparency = 1
-title.Text = "Weapon Hub"
+title.Text = "Ultimate Weapon Hub"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 16
+title.TextSize = 15
 title.Font = Enum.Font.SourceSansBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = mainFrame
@@ -44,10 +51,10 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 6)
 minCorner.Parent = minimizeBtn
 
-local function createButton(posY, text)
+local function createButton(posY, text, sizeY)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.85, 0, 0, 32)
-	btn.Position = UDim2.new(0.075, 0, posY, 0)
+	btn.Size = UDim2.new(0.88, 0, 0, sizeY or 28)
+	btn.Position = UDim2.new(0.06, 0, posY, 0)
 	btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 	btn.Text = text
 	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -56,18 +63,85 @@ local function createButton(posY, text)
 	btn.Parent = mainFrame
 
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
+	corner.CornerRadius = UDim.new(0, 6)
 	corner.Parent = btn
 	return btn
 end
 
-local rightToggleBtn = createButton(0.10, "Right Staff: OFF")
-local leftToggleBtn = createButton(0.22, "Spring Hammer: OFF")
-local karambitToggleBtn = createButton(0.34, "Dual Karambit: OFF")
-local swordsToggleBtn = createButton(0.46, "Dual Swords: OFF")
-local spinToggleBtn = createButton(0.58, "Spin Staff: OFF")
-local slippersToggleBtn = createButton(0.70, "Slippers: OFF")
+-- Danh sách các nút tính năng
+local handToggleBtn = createButton(0.07, "Hand Mode: RIGHT")
+handToggleBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 220)
 
+local autoSwingBtn = createButton(0.135, "Auto Swing: OFF")
+local glowBtn = createButton(0.20, "Glow Custom Blade: OFF")
+
+local rightToggleBtn = createButton(0.265, "Staff: OFF")
+local leftToggleBtn = createButton(0.33, "Spring Hammer: OFF")
+local karambitToggleBtn = createButton(0.395, "Dual Karambit: OFF")
+local swordsToggleBtn = createButton(0.46, "Dual Swords: OFF")
+
+local colorChangeBtn = createButton(0.525, "Staff Color: White")
+local staffLengthBtn = createButton(0.59, "Staff Length: 18 (Long)")
+staffLengthBtn.BackgroundColor3 = Color3.fromRGB(140, 60, 200)
+
+-- ==========================================
+-- THANH CHỌN MÀU PHÁT SÁNG (GLOW SLIDER)
+-- ==========================================
+local colorLabel = Instance.new("TextLabel")
+colorLabel.Size = UDim2.new(0.88, 0, 0, 18)
+colorLabel.Position = UDim2.new(0.06, 0, 0.66, 0)
+colorLabel.BackgroundTransparency = 1
+colorLabel.Text = "Glow Color Picker"
+colorLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+colorLabel.TextSize = 12
+colorLabel.Font = Enum.Font.SourceSansBold
+colorLabel.TextXAlignment = Enum.TextXAlignment.Left
+colorLabel.Parent = mainFrame
+
+local sliderFrame = Instance.new("Frame")
+sliderFrame.Name = "ColorSlider"
+sliderFrame.Size = UDim2.new(0.88, 0, 0, 18)
+sliderFrame.Position = UDim2.new(0.06, 0, 0.705, 0)
+sliderFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+sliderFrame.Parent = mainFrame
+
+local sliderCorner = Instance.new("UICorner")
+sliderCorner.CornerRadius = UDim.new(0, 5)
+sliderCorner.Parent = sliderFrame
+
+local uiGradient = Instance.new("UIGradient")
+uiGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
+	ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+	ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+	ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
+	ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
+	ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+	ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 0))
+})
+uiGradient.Parent = sliderFrame
+
+local sliderPicker = Instance.new("Frame")
+sliderPicker.Size = UDim2.new(0, 6, 1, 4)
+sliderPicker.Position = UDim2.new(0.5, -3, 0, -2)
+sliderPicker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+sliderPicker.Parent = sliderFrame
+
+local pickerCorner = Instance.new("UICorner")
+pickerCorner.CornerRadius = UDim.new(0, 3)
+pickerCorner.Parent = sliderPicker
+
+local colorPreview = Instance.new("Frame")
+colorPreview.Size = UDim2.new(0.88, 0, 0, 20)
+colorPreview.Position = UDim2.new(0.06, 0, 0.755, 0)
+colorPreview.BackgroundColor3 = Color3.fromRGB(0, 235, 255)
+colorPreview.Parent = mainFrame
+
+local previewCorner = Instance.new("UICorner")
+previewCorner.CornerRadius = UDim.new(0, 5)
+previewCorner.Parent = colorPreview
+
+-- BONG BÓNG THU NHỎ
 local bubbleBtn = Instance.new("ImageButton")
 bubbleBtn.Name = "BubbleButton"
 bubbleBtn.Size = UDim2.new(0, 45, 0, 45)
@@ -98,43 +172,161 @@ bubbleBtn.MouseButton1Click:Connect(function()
 	bubbleBtn.Visible = false
 	mainFrame.Visible = true
 end)
+-- ==========================================
+-- BIẾN VÀ CẤU HÌNH TRẠNG THÁI
+-- ==========================================
+local isLeftHandMode = false
+local isSwinging = false
+local isGlowing = false
+local isAnimating = false
 
--- Xuất các nút ra biến toàn cục (_G)
-_G.RightBtn = rightToggleBtn
-_G.LeftBtn = leftToggleBtn
-_G.KarambitBtn = karambitToggleBtn
-_G.SwordsBtn = swordsToggleBtn
-_G.SpinBtn = spinToggleBtn
-_G.SlippersBtn = slippersToggleBtn
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
+local DEFAULT_BLADE_COLOR = Color3.fromRGB(220, 220, 220)
+local selectedGlowColor = Color3.fromRGB(0, 235, 255)
 
-local function createRightStaff()
-	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+local currentStaffColor = Color3.fromRGB(255, 255, 255)
+local colorIndex = 1
+local staffColors = {
+	{name = "White", color = Color3.fromRGB(255, 255, 255)},
+	{name = "Red", color = Color3.fromRGB(255, 50, 50)},
+	{name = "Blue", color = Color3.fromRGB(50, 150, 255)},
+	{name = "Green", color = Color3.fromRGB(50, 255, 50)},
+	{name = "Yellow", color = Color3.fromRGB(255, 255, 50)},
+	{name = "Purple", color = Color3.fromRGB(200, 50, 255)}
+}
+
+local lengthIndex = 2
+local staffLengths = {
+	{name = "Standard", length = 12.0},
+	{name = "Long", length = 18.0},
+	{name = "Extra Long", length = 24.0},
+	{name = "Giant", length = 30.0}
+}
+local currentStaffLength = staffLengths[lengthIndex].length
+
+local currentRightStaff = nil
+local currentLeftHammer = nil
+local currentDualKarambit = nil
+local currentDualSwords = nil
+local currentCustomSword = nil
+
+local isRightStaffOn = false
+local isLeftHammerOn = false
+local isDualKarambitOn = false
+local isDualSwordsOn = false
+
+-- ==========================================
+-- HÀM TRỢ GIÚP VÀ PHÁT SÁNG
+-- ==========================================
+local function getTargetHand(isLeft)
+	if isLeft then
+		return character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm")
+	else
+		return character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+	end
+end
+
+local function applyGlowEffect()
+	if not currentCustomSword then return end
+	local blade = currentCustomSword:FindFirstChild("Blade")
+
+	if blade then
+		if isGlowing then
+			blade.Material = Enum.Material.Neon
+			blade.Color = selectedGlowColor
+		else
+			blade.Material = Enum.Material.Metal
+			blade.Color = DEFAULT_BLADE_COLOR
+		end
+	end
+end
+
+local function updateStaffColorParts(staffModel, newColor)
+	if not staffModel then return end
+	for _, part in ipairs(staffModel:GetChildren()) do
+		if part.Name == "Rod" or part.Name == "StaffCap1" or part.Name == "StaffCap2" then
+			part.Color = newColor
+		end
+	end
+end
+
+-- ==========================================
+-- TẠO CÁC MẪU VŨ KHÍ
+-- ==========================================
+
+-- 1. Custom Glow Sword
+local function createCustomSword(char)
+	if not char then return end
+	if currentCustomSword then 
+		currentCustomSword:Destroy() 
+		currentCustomSword = nil
+	end
+
+	local rightHand = char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm")
 	if not rightHand then return end
 
+	local swordModel = Instance.new("Model")
+	swordModel.Name = "CustomClientSword"
+
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(0.3, 1.2, 0.3)
+	handle.Color = Color3.fromRGB(100, 50, 0)
+	handle.Material = Enum.Material.SmoothPlastic
+	handle.CanCollide = false
+	handle.Parent = swordModel
+
+	local blade = Instance.new("Part")
+	blade.Name = "Blade"
+	blade.Size = Vector3.new(0.05, 3.8, 0.8)
+	blade.Color = DEFAULT_BLADE_COLOR
+	blade.Material = Enum.Material.Metal
+	blade.CanCollide = false
+	blade.Parent = swordModel
+
+	local bladeWeld = Instance.new("Weld")
+	bladeWeld.Part0 = handle
+	bladeWeld.Part1 = blade
+	bladeWeld.C0 = CFrame.new(0, 2.5, 0)
+	bladeWeld.Parent = handle
+
+	local motor = Instance.new("Motor6D")
+	motor.Name = "SwordMotor"
+	motor.Part0 = rightHand
+	motor.Part1 = handle
+	motor.C0 = CFrame.new(0, -0.2, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+	motor.Parent = handle
+
+	swordModel.Parent = char
+	currentCustomSword = swordModel
+
+	applyGlowEffect()
+	return motor
+end
+
+-- 2. Staff
+local function createRightStaff()
+	local hand = getTargetHand(isLeftHandMode)
+	if not hand then return nil end
+
 	local staffModel = Instance.new("Model")
-	staffModel.Name = "RightClientStaff"
+	staffModel.Name = "ClientStaff"
 
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
 	handle.Shape = Enum.PartType.Cylinder
-	handle.Size = Vector3.new(2.5, 0.36, 0.36)
-	handle.Color = Color3.fromRGB(35, 35, 35)
-	handle.Material = Enum.Material.SmoothPlastic
+	handle.Size = Vector3.new(1, 0.38, 0.38)
+	handle.Transparency = 1
 	handle.CanCollide = false
 	handle.Parent = staffModel
 
-	local rodLength = 12.0
-	local rodRadius = 0.35
-	
+	local rodLength = currentStaffLength
+	local neonRadius = 0.33
+
 	local rod = Instance.new("Part")
 	rod.Name = "Rod"
 	rod.Shape = Enum.PartType.Cylinder
-	rod.Size = Vector3.new(rodLength, rodRadius, rodRadius)
-	rod.Color = Color3.fromRGB(255, 255, 255)
+	rod.Size = Vector3.new(rodLength, neonRadius, neonRadius)
+	rod.Color = currentStaffColor
 	rod.Material = Enum.Material.Neon
 	rod.CanCollide = false
 	rod.Parent = staffModel
@@ -147,8 +339,8 @@ local function createRightStaff()
 	local cap1 = Instance.new("Part")
 	cap1.Name = "StaffCap1"
 	cap1.Shape = Enum.PartType.Ball
-	cap1.Size = Vector3.new(rodRadius, rodRadius, rodRadius)
-	cap1.Color = Color3.fromRGB(255, 255, 255)
+	cap1.Size = Vector3.new(neonRadius, neonRadius, neonRadius)
+	cap1.Color = currentStaffColor
 	cap1.Material = Enum.Material.Neon
 	cap1.CanCollide = false
 	cap1.Parent = staffModel
@@ -162,8 +354,8 @@ local function createRightStaff()
 	local cap2 = Instance.new("Part")
 	cap2.Name = "StaffCap2"
 	cap2.Shape = Enum.PartType.Ball
-	cap2.Size = Vector3.new(rodRadius, rodRadius, rodRadius)
-	cap2.Color = Color3.fromRGB(255, 255, 255)
+	cap2.Size = Vector3.new(neonRadius, neonRadius, neonRadius)
+	cap2.Color = currentStaffColor
 	cap2.Material = Enum.Material.Neon
 	cap2.CanCollide = false
 	cap2.Parent = staffModel
@@ -174,10 +366,63 @@ local function createRightStaff()
 	cap2Weld.C0 = CFrame.new(-rodLength / 2, 0, 0)
 	cap2Weld.Parent = rod
 
-	local gripY = (rightHand.Name == "Right Arm") and -0.8 or -0.2
+	local handleGripLength = 2.8
+	local gripBase = Instance.new("Part")
+	gripBase.Name = "GripBase"
+	gripBase.Shape = Enum.PartType.Cylinder
+	gripBase.Size = Vector3.new(handleGripLength, 0.38, 0.38)
+	gripBase.Color = Color3.fromRGB(240, 240, 240)
+	gripBase.Material = Enum.Material.SmoothPlastic
+	gripBase.CanCollide = false
+	gripBase.Parent = staffModel
+
+	local gripWeld = Instance.new("Weld")
+	gripWeld.Part0 = handle
+	gripWeld.Part1 = gripBase
+	gripWeld.Parent = handle
+
+	for _, side in ipairs({1, -1}) do
+		local endCap = Instance.new("Part")
+		endCap.Name = "GripEndCap"
+		endCap.Shape = Enum.PartType.Cylinder
+		endCap.Size = Vector3.new(0.2, 0.44, 0.44)
+		endCap.Color = Color3.fromRGB(25, 25, 25)
+		endCap.Material = Enum.Material.SmoothPlastic
+		endCap.CanCollide = false
+		endCap.Parent = staffModel
+
+		local endWeld = Instance.new("Weld")
+		endWeld.Part0 = gripBase
+		endWeld.Part1 = endCap
+		endWeld.C0 = CFrame.new(side * (handleGripLength / 2), 0, 0)
+		endWeld.Parent = gripBase
+	end
+
+	local ringCount = 4
+	local spacing = handleGripLength / (ringCount + 1)
+	
+	for i = 1, ringCount do
+		local offset = - (handleGripLength / 2) + (i * spacing)
+		local ring = Instance.new("Part")
+		ring.Name = "GripRing"
+		ring.Shape = Enum.PartType.Cylinder
+		ring.Size = Vector3.new(0.1, 0.4, 0.4)
+		ring.Color = Color3.fromRGB(20, 20, 20)
+		ring.Material = Enum.Material.SmoothPlastic
+		ring.CanCollide = false
+		ring.Parent = staffModel
+
+		local ringWeld = Instance.new("Weld")
+		ringWeld.Part0 = gripBase
+		ringWeld.Part1 = ring
+		ringWeld.C0 = CFrame.new(offset, 0, 0)
+		ringWeld.Parent = gripBase
+	end
+
+	local gripY = (hand.Name == "Right Arm" or hand.Name == "Left Arm") and -0.8 or -0.2
 	local motor = Instance.new("Motor6D")
-	motor.Name = "RightGrip"
-	motor.Part0 = rightHand
+	motor.Name = "StaffGrip"
+	motor.Part0 = hand
 	motor.Part1 = handle
 	motor.C0 = CFrame.new(0, gripY, 0) * CFrame.Angles(0, math.rad(90), math.rad(-15))
 	motor.Parent = handle
@@ -186,9 +431,10 @@ local function createRightStaff()
 	return staffModel
 end
 
+-- 3. Spring Hammer
 local function createSpringHammer()
-	local leftHand = character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm")
-	if not leftHand then return end
+	local hand = getTargetHand(not isLeftHandMode)
+	if not hand then return end
 
 	local hammerModel = Instance.new("Model")
 	hammerModel.Name = "SpringHammerModel"
@@ -210,7 +456,7 @@ local function createSpringHammer()
 	local hammerBody = Instance.new("Part")
 	hammerBody.Name = "HammerBody"
 	hammerBody.Shape = Enum.PartType.Cylinder
-	hammerBody.Size = Vector3.new(2.8, 2.8, 2.8)
+	hammerBody.Size = Vector3.new(1.8, 1.8, 1.8)
 	hammerBody.Color = mainColor
 	hammerBody.Material = glassMaterial
 	hammerBody.Transparency = glassTrans
@@ -220,24 +466,22 @@ local function createSpringHammer()
 	local bodyWeld = Instance.new("Weld")
 	bodyWeld.Part0 = handle
 	bodyWeld.Part1 = hammerBody
-	bodyWeld.C0 = CFrame.new(-2.2, 0, 0) * CFrame.Angles(0, 0, math.rad(90))
+	bodyWeld.C0 = CFrame.new(3.25, 0, 0) * CFrame.Angles(0, 0, math.rad(90))
 	bodyWeld.Parent = handle
 
-	local steps = 5
-	local baseOffset = 1.4
-	local totalThickness = 0.8
+	local steps = 3
+	local baseOffset = 0.9
+	local segmentThickness = 0.5
 
 	for _, dir in ipairs({1, -1}) do
 		for i = 1, steps do
-			local alpha = i / steps
-			local thickness = totalThickness / steps
-			local currentDiameter = 2.8 * (1 - alpha * 0.42)
-			local distOffset = baseOffset + (i - 0.5) * thickness
+			local currentDiameter = 1.8 + (i * 0.6)
+			local distOffset = baseOffset + ((i - 1) * segmentThickness) + (segmentThickness / 2)
 
 			local capSegment = Instance.new("Part")
 			capSegment.Name = "TaperedCap"
 			capSegment.Shape = Enum.PartType.Cylinder
-			capSegment.Size = Vector3.new(thickness, currentDiameter, currentDiameter)
+			capSegment.Size = Vector3.new(segmentThickness, currentDiameter, currentDiameter)
 			capSegment.Color = mainColor
 			capSegment.Material = glassMaterial
 			capSegment.Transparency = glassTrans
@@ -251,11 +495,11 @@ local function createSpringHammer()
 			capWeld.Parent = hammerBody
 		end
 	end
-
+	
 	local centerBelt = Instance.new("Part")
 	centerBelt.Name = "CenterBelt"
 	centerBelt.Shape = Enum.PartType.Cylinder
-	centerBelt.Size = Vector3.new(0.9, 3.0, 3.0)
+	centerBelt.Size = Vector3.new(0.6, 2.0, 2.0)
 	centerBelt.Color = Color3.fromRGB(20, 22, 28)
 	centerBelt.Material = Enum.Material.SmoothPlastic
 	centerBelt.Transparency = 0.2
@@ -271,15 +515,15 @@ local function createSpringHammer()
 	for i = 1, 8 do
 		local spike = Instance.new("Part")
 		spike.Name = "Spike"
-		spike.Size = Vector3.new(0.35, 0.35, 0.35)
+		spike.Size = Vector3.new(0.3, 0.3, 0.3)
 		spike.Color = Color3.fromRGB(15, 15, 18)
 		spike.Material = Enum.Material.SmoothPlastic
 		spike.CanCollide = false
 		spike.Parent = hammerModel
 
 		local angle = math.rad(i * (360 / 8))
-		local xOffset = math.cos(angle) * 1.55
-		local zOffset = math.sin(angle) * 1.55
+		local xOffset = math.cos(angle) * 1.05
+		local zOffset = math.sin(angle) * 1.05
 
 		local spikeWeld = Instance.new("Weld")
 		spikeWeld.Part0 = centerBelt
@@ -288,12 +532,12 @@ local function createSpringHammer()
 		spikeWeld.Parent = centerBelt
 	end
 
-	local coilCount = 20
+	local coilCount = 16
 	for i = 1, coilCount do
 		local coilPart = Instance.new("Part")
 		coilPart.Name = "CoilSegment"
 		coilPart.Shape = Enum.PartType.Cylinder
-		coilPart.Size = Vector3.new(0.35, 0.25, 0.25)
+		coilPart.Size = Vector3.new(0.3, 0.22, 0.22)
 		coilPart.Color = Color3.fromRGB(15, 15, 15)
 		coilPart.Material = Enum.Material.SmoothPlastic
 		coilPart.Transparency = 0.1
@@ -301,9 +545,9 @@ local function createSpringHammer()
 		coilPart.Parent = hammerModel
 
 		local progress = (i / coilCount) - 0.5
-		local yPos = progress * 3.6
-		local angle = progress * math.pi * 6.5
-		local radius = 1.52
+		local yPos = progress * 3.0
+		local angle = progress * math.pi * 5.5
+		local radius = 1.35
 
 		local xPos = math.cos(angle) * radius
 		local zPos = math.sin(angle) * radius
@@ -315,120 +559,19 @@ local function createSpringHammer()
 		coilWeld.Parent = hammerBody
 	end
 
-	local gripY = (leftHand.Name == "Left Arm") and -0.8 or -0.2
+	local gripY = (hand.Name == "Left Arm" or hand.Name == "Right Arm") and -0.8 or -0.2
 	local motor = Instance.new("Motor6D")
-	motor.Name = "LeftGrip"
-	motor.Part0 = leftHand
+	motor.Name = "HammerGrip"
+	motor.Part0 = hand
 	motor.Part1 = handle
-	motor.C0 = CFrame.new(0.2, gripY, -0.6) * CFrame.Angles(math.rad(10), math.rad(-95), math.rad(15))
+	motor.C0 = CFrame.new(0.2, gripY, -0.6) * CFrame.Angles(math.rad(10), math.rad(-95 + 180), math.rad(15))
 	motor.Parent = handle
 
 	hammerModel.Parent = character
 	return hammerModel
 end
 
-local function createSingleSlipper(footPart, isLeft)
-	local model = Instance.new("Model")
-	model.Name = isLeft and "Slipper_L" or "Slipper_R"
-
-	local sole = Instance.new("Part")
-	sole.Name = "Sole"
-	sole.Size = Vector3.new(1.0, 0.18, 1.35)
-	sole.Color = Color3.fromRGB(35, 35, 35)
-	sole.Material = Enum.Material.SmoothPlastic
-	sole.CanCollide = false
-	sole.Parent = model
-
-	local strap = Instance.new("Part")
-	strap.Name = "Strap"
-	strap.Size = Vector3.new(1.02, 0.35, 0.65)
-	strap.Color = Color3.fromRGB(40, 40, 40)
-	strap.Material = Enum.Material.SmoothPlastic
-	strap.CanCollide = false
-	strap.Parent = model
-
-	local strapWeld = Instance.new("Weld")
-	strapWeld.Part0 = sole
-	strapWeld.Part1 = strap
-	strapWeld.C0 = CFrame.new(0, 0.22, -0.05) * CFrame.Angles(math.rad(15), 0, 0)
-	strapWeld.Parent = sole
-
-	local redStripe = Instance.new("Part")
-	redStripe.Name = "RedStripe"
-	redStripe.Size = Vector3.new(1.03, 0.37, 0.22)
-	redStripe.Color = Color3.fromRGB(220, 40, 40)
-	redStripe.Material = Enum.Material.SmoothPlastic
-	redStripe.CanCollide = false
-	redStripe.Parent = model
-
-	local redWeld = Instance.new("Weld")
-	redWeld.Part0 = strap
-	redWeld.Part1 = redStripe
-	redWeld.C0 = CFrame.new(0, 0, 0)
-	redWeld.Parent = strap
-
-	for _, zOffset in ipairs({-0.14, 0.14}) do
-		local greenStripe = Instance.new("Part")
-		greenStripe.Name = "GreenStripe"
-		greenStripe.Size = Vector3.new(1.03, 0.37, 0.1)
-		greenStripe.Color = Color3.fromRGB(15, 130, 50)
-		greenStripe.Material = Enum.Material.SmoothPlastic
-		greenStripe.CanCollide = false
-		greenStripe.Parent = model
-
-		local gWeld = Instance.new("Weld")
-		gWeld.Part0 = strap
-		gWeld.Part1 = greenStripe
-		gWeld.C0 = CFrame.new(0, 0, zOffset)
-		gWeld.Parent = strap
-	end
-
-	local sock = Instance.new("Part")
-	sock.Name = "WhiteSock"
-	sock.Size = Vector3.new(0.92, 0.45, 1.2)
-	sock.Color = Color3.fromRGB(245, 240, 230)
-	sock.Material = Enum.Material.SmoothPlastic
-	sock.CanCollide = false
-	sock.Parent = model
-
-	local sockWeld = Instance.new("Weld")
-	sockWeld.Part0 = sole
-	sockWeld.Part1 = sock
-	sockWeld.C0 = CFrame.new(0, 0.3, 0.05)
-	sockWeld.Parent = sole
-
-	local isR6 = (footPart.Name == "Right Leg" or footPart.Name == "Left Leg")
-	local yOffset = isR6 and -1.0 or -0.32
-
-	local motor = Instance.new("Motor6D")
-	motor.Name = isLeft and "SlipperLeftGrip" or "SlipperRightGrip"
-	motor.Part0 = footPart
-	motor.Part1 = sole
-	motor.C0 = CFrame.new(0, yOffset, 0.05)
-	motor.Parent = sole
-
-	model.Parent = character
-	return model
-end
-
-local function createDualSlippers()
-	local rightFoot = character:FindFirstChild("RightFoot") or character:FindFirstChild("Right Leg")
-	local leftFoot = character:FindFirstChild("LeftFoot") or character:FindFirstChild("Left Leg")
-	
-	local dualContainer = Instance.new("Model")
-	dualContainer.Name = "DualSlippersModel"
-
-	if rightFoot then
-		createSingleSlipper(rightFoot, false).Parent = dualContainer
-	end
-	if leftFoot then
-		createSingleSlipper(leftFoot, true).Parent = dualContainer
-	end
-
-	dualContainer.Parent = character
-	return dualContainer
-end
-
+-- 4. Dual Karambit
 local function createSingleKarambit(handPart, isLeft)
 	local model = Instance.new("Model")
 	model.Name = isLeft and "Karambit_L" or "Karambit_R"
@@ -505,34 +648,46 @@ local function createDualKarambit()
 	local dualContainer = Instance.new("Model")
 	dualContainer.Name = "DualKarambitModel"
 
-	if rightHand then
-		createSingleKarambit(rightHand, false).Parent = dualContainer
-	end
-	if leftHand then
-		createSingleKarambit(leftHand, true).Parent = dualContainer
-	end
+	if rightHand then createSingleKarambit(rightHand, false).Parent = dualContainer end
+	if leftHand then createSingleKarambit(leftHand, true).Parent = dualContainer end
 
 	dualContainer.Parent = character
 	return dualContainer
 end
 
+-- 5. Dual Swords
 local function createSingleBlackSword(handPart, isLeft)
 	local model = Instance.new("Model")
 	model.Name = isLeft and "BlackSword_L" or "BlackSword_R"
 
-	local blackColor = Color3.fromRGB(15, 15, 15)
+	local blackColor = Color3.fromRGB(12, 12, 14)
+	local darkMetal = Color3.fromRGB(25, 25, 28)
 
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
-	handle.Size = Vector3.new(0.2, 0.8, 0.2)
-	handle.Color = blackColor
+	handle.Size = Vector3.new(0.22, 0.95, 0.22)
+	handle.Color = darkMetal
 	handle.Material = Enum.Material.SmoothPlastic
 	handle.CanCollide = false
 	handle.Parent = model
 
+	local pommel = Instance.new("Part")
+	pommel.Name = "Pommel"
+	pommel.Size = Vector3.new(0.32, 0.14, 0.32)
+	pommel.Color = blackColor
+	pommel.Material = Enum.Material.SmoothPlastic
+	pommel.CanCollide = false
+	pommel.Parent = model
+
+	local pommelWeld = Instance.new("Weld")
+	pommelWeld.Part0 = handle
+	pommelWeld.Part1 = pommel
+	pommelWeld.C0 = CFrame.new(0, -0.52, 0)
+	pommelWeld.Parent = handle
+
 	local guard = Instance.new("Part")
 	guard.Name = "Guard"
-	guard.Size = Vector3.new(0.4, 0.1, 0.25)
+	guard.Size = Vector3.new(0.75, 0.11, 0.28)
 	guard.Color = blackColor
 	guard.Material = Enum.Material.SmoothPlastic
 	guard.CanCollide = false
@@ -541,31 +696,12 @@ local function createSingleBlackSword(handPart, isLeft)
 	local guardWeld = Instance.new("Weld")
 	guardWeld.Part0 = handle
 	guardWeld.Part1 = guard
-	guardWeld.C0 = CFrame.new(0, 0.4, 0)
+	guardWeld.C0 = CFrame.new(0, 0.48, 0)
 	guardWeld.Parent = handle
 
 	local blade = Instance.new("Part")
 	blade.Name = "Blade"
-	blade.Size = Vector3.new(0.35, 2.2, 0.12)
-	blade.Color = blackColor
-	blade.Material = Enum.Material.SmoothPlastic
-	local guard = Instance.new("Part")
-	guard.Name = "Guard"
-	guard.Size = Vector3.new(0.4, 0.1, 0.25)
-	guard.Color = blackColor
-	guard.Material = Enum.Material.SmoothPlastic
-	guard.CanCollide = false
-	guard.Parent = model
-
-	local guardWeld = Instance.new("Weld")
-	guardWeld.Part0 = handle
-	guardWeld.Part1 = guard
-	guardWeld.C0 = CFrame.new(0, 0.4, 0)
-	guardWeld.Parent = handle
-
-	local blade = Instance.new("Part")
-	blade.Name = "Blade"
-	blade.Size = Vector3.new(0.35, 2.2, 0.12)
+	blade.Size = Vector3.new(0.28, 3.6, 0.065)
 	blade.Color = blackColor
 	blade.Material = Enum.Material.SmoothPlastic
 	blade.CanCollide = false
@@ -574,12 +710,12 @@ local function createSingleBlackSword(handPart, isLeft)
 	local bladeWeld = Instance.new("Weld")
 	bladeWeld.Part0 = guard
 	bladeWeld.Part1 = blade
-	bladeWeld.C0 = CFrame.new(0, 1.1, 0)
+	bladeWeld.C0 = CFrame.new(0, 1.85, 0)
 	bladeWeld.Parent = guard
 
 	local tip = Instance.new("WedgePart")
 	tip.Name = "Tip"
-	tip.Size = Vector3.new(0.35, 0.4, 0.12)
+	tip.Size = Vector3.new(0.065, 0.55, 0.28)
 	tip.Color = blackColor
 	tip.Material = Enum.Material.SmoothPlastic
 	tip.CanCollide = false
@@ -588,17 +724,23 @@ local function createSingleBlackSword(handPart, isLeft)
 	local tipWeld = Instance.new("Weld")
 	tipWeld.Part0 = blade
 	tipWeld.Part1 = tip
-	tipWeld.C0 = CFrame.new(0, 1.3, 0) * CFrame.Angles(0, math.rad(180), 0)
+	tipWeld.C0 = CFrame.new(0, 2.05, 0) * CFrame.Angles(0, math.rad(90), 0)
 	tipWeld.Parent = blade
 
 	local isR6 = (handPart.Name == "Right Arm" or handPart.Name == "Left Arm")
-	local yOffset = isR6 and -0.85 or -0.1
+	local yOffset = isR6 and -0.9 or -0.12
 
 	local motor = Instance.new("Motor6D")
 	motor.Name = isLeft and "SwordLeftGrip" or "SwordRightGrip"
 	motor.Part0 = handPart
 	motor.Part1 = handle
-	motor.C0 = CFrame.new(0, yOffset, 0) * CFrame.Angles(math.rad(90), 0, math.rad(180))
+
+	if isLeft then
+		motor.C0 = CFrame.new(0, yOffset, 0) * CFrame.Angles(math.rad(-88), math.rad(8), math.rad(-12))
+	else
+		motor.C0 = CFrame.new(0, yOffset, 0) * CFrame.Angles(math.rad(-88), math.rad(-8), math.rad(12))
+	end
+
 	motor.Parent = handle
 
 	model.Parent = character
@@ -612,180 +754,270 @@ local function createDualSwords()
 	local dualContainer = Instance.new("Model")
 	dualContainer.Name = "DualSwordsModel"
 
-	if rightHand then
-		createSingleBlackSword(rightHand, false).Parent = dualContainer
-	end
-	if leftHand then
-		createSingleBlackSword(leftHand, true).Parent = dualContainer
-	end
+	if rightHand then createSingleBlackSword(rightHand, false).Parent = dualContainer end
+	if leftHand then createSingleBlackSword(leftHand, true).Parent = dualContainer end
 
 	dualContainer.Parent = character
 	return dualContainer
 end
-local isRightStaffOn = false
-local isLeftHammerOn = false
-local isDualKarambitOn = false
-local isDualSwordsOn = false
-local isSlippersOn = false
-local isSpinning = false
+-- ==========================================
+-- ĐỘNG TÁC CHÉM (PERFORM SLASH)
+-- ==========================================
+local function performSlash()
+	if isAnimating or not character then return end
+	isAnimating = true
 
-local currentRightStaff = nil
-local currentLeftHammer = nil
-local currentDualKarambit = nil
-local currentDualSwords = nil
-local currentSlippers = nil
-local spinConnection = nil
-
-local function updateSpinning(dt)
-	if not isSpinning or not currentRightStaff then return end
-	local handle = currentRightStaff:FindFirstChild("Handle")
-	if not handle then return end
-
-	local motor = handle:FindFirstChild("RightGrip")
 	local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	
-	if motor and torso then
-		local spinSpeed = 25
-		local angle = (tick() * spinSpeed) % (math.pi * 2)
-		motor.Part0 = torso
-		motor.C0 = CFrame.new(0, 0, -1.8) * CFrame.Angles(0, angle, math.rad(90))
+	if not torso or not rightHand then 
+		isAnimating = false 
+		return 
 	end
+
+	local shoulder = torso:FindFirstChild("Right Shoulder") or rightHand:FindFirstChild("RightShoulder") or torso:FindFirstChild("RightShoulder")
+	local swordMotor = currentCustomSword and currentCustomSword.Handle:FindFirstChild("SwordMotor")
+
+	if not swordMotor then
+		createCustomSword(character)
+		swordMotor = currentCustomSword and currentCustomSword.Handle:FindFirstChild("SwordMotor")
+	end
+
+	if shoulder and swordMotor then
+		local origShoulderC0 = shoulder.C0
+		local origSwordC0 = swordMotor.C0
+
+		local t1 = TweenService:Create(shoulder, TweenInfo.new(0.12), {
+			C0 = origShoulderC0 * CFrame.Angles(math.rad(110), math.rad(-20), math.rad(30))
+		})
+		t1:Play()
+		t1.Completed:Wait()
+
+		local t2 = TweenService:Create(shoulder, TweenInfo.new(0.08), {
+			C0 = origShoulderC0 * CFrame.Angles(math.rad(20), math.rad(40), math.rad(-40))
+		})
+		local t2_sword = TweenService:Create(swordMotor, TweenInfo.new(0.08), {
+			C0 = origSwordC0 * CFrame.Angles(math.rad(180), 0, 0)
+		})
+		t2:Play()
+		t2_sword:Play()
+		t2.Completed:Wait()
+
+		local t3 = TweenService:Create(shoulder, TweenInfo.new(0.15), {C0 = origShoulderC0})
+		local t3_sword = TweenService:Create(swordMotor, TweenInfo.new(0.15), {C0 = origSwordC0})
+		t3:Play()
+		t3_sword:Play()
+		t3.Completed:Wait()
+	end
+
+	isAnimating = false
 end
 
-local function startSpin()
-	if not isRightStaffOn then
-		isRightStaffOn = true
-		if _G.RightBtn then
-			_G.RightBtn.Text = "Right Staff: ON"
-			_G.RightBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-		end
-		currentRightStaff = createRightStaff()
-	end
+-- ==========================================
+-- KÉO SLIDER MÀU SÁNG
+-- ==========================================
+local isDraggingColor = false
 
-	isSpinning = true
-	if _G.SpinBtn then
-		_G.SpinBtn.Text = "Spin Staff: ON"
-		_G.SpinBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-	end
+local function updateColor(input)
+	local sliderAbsPos = sliderFrame.AbsolutePosition.X
+	local sliderAbsSize = sliderFrame.AbsoluteSize.X
+	local x = math.clamp(input.Position.X - sliderAbsPos, 0, sliderAbsSize)
+	local alpha = x / sliderAbsSize
 
-	if not spinConnection then
-		spinConnection = RunService.RenderStepped:Connect(updateSpinning)
-	end
+	sliderPicker.Position = UDim2.new(alpha, -3, 0, -2)
+	selectedGlowColor = Color3.fromHSV(alpha, 1, 1)
+	colorPreview.BackgroundColor3 = selectedGlowColor
+
+	applyGlowEffect()
 end
 
-local function stopSpin()
-	isSpinning = false
-	if _G.SpinBtn then
-		_G.SpinBtn.Text = "Spin Staff: OFF"
-		_G.SpinBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+sliderFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		isDraggingColor = true
+		updateColor(input)
 	end
-
-	if spinConnection then
-		spinConnection:Disconnect()
-		spinConnection = nil
-	end
-
-	if currentRightStaff then
-		local handle = currentRightStaff:FindFirstChild("Handle")
-		local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
-		if handle and rightHand then
-			local motor = handle:FindFirstChild("RightGrip")
-			if motor then
-				local gripY = (rightHand.Name == "Right Arm") and -0.8 or -0.2
-				motor.Part0 = rightHand
-				motor.C0 = CFrame.new(0, gripY, 0) * CFrame.Angles(0, math.rad(90), math.rad(-15))
-			end
-		end
-	end
-end
-
-task.spawn(function()
-	while not _G.RightBtn do task.wait(0.1) end
-
-	_G.RightBtn.MouseButton1Click:Connect(function()
-		isRightStaffOn = not isRightStaffOn
-		if isRightStaffOn then
-			_G.RightBtn.Text = "Right Staff: ON"
-			_G.RightBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-			currentRightStaff = createRightStaff()
-		else
-			_G.RightBtn.Text = "Right Staff: OFF"
-			_G.RightBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-			if isSpinning then stopSpin() end
-			if currentRightStaff then currentRightStaff:Destroy(); currentRightStaff = nil end
-		end
-	end)
-
-	_G.LeftBtn.MouseButton1Click:Connect(function()
-		isLeftHammerOn = not isLeftHammerOn
-		if isLeftHammerOn then
-			_G.LeftBtn.Text = "Spring Hammer: ON"
-			_G.LeftBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-			currentLeftHammer = createSpringHammer()
-		else
-			_G.LeftBtn.Text = "Spring Hammer: OFF"
-			_G.LeftBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-			if currentLeftHammer then currentLeftHammer:Destroy(); currentLeftHammer = nil end
-		end
-	end)
-
-	_G.KarambitBtn.MouseButton1Click:Connect(function()
-		isDualKarambitOn = not isDualKarambitOn
-		if isDualKarambitOn then
-			_G.KarambitBtn.Text = "Dual Karambit: ON"
-			_G.KarambitBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-			currentDualKarambit = createDualKarambit()
-		else
-			_G.KarambitBtn.Text = "Dual Karambit: OFF"
-			_G.KarambitBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-			if currentDualKarambit then currentDualKarambit:Destroy(); currentDualKarambit = nil end
-		end
-	end)
-
-	_G.SwordsBtn.MouseButton1Click:Connect(function()
-		isDualSwordsOn = not isDualSwordsOn
-		if isDualSwordsOn then
-			_G.SwordsBtn.Text = "Dual Swords: ON"
-			_G.SwordsBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-			currentDualSwords = createDualSwords()
-		else
-			_G.SwordsBtn.Text = "Dual Swords: OFF"
-			_G.SwordsBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-			if currentDualSwords then currentDualSwords:Destroy(); currentDualSwords = nil end
-		end
-	end)
-
-	_G.SpinBtn.MouseButton1Click:Connect(function()
-		if isSpinning then stopSpin() else startSpin() end
-	end)
-
-	_G.SlippersBtn.MouseButton1Click:Connect(function()
-		isSlippersOn = not isSlippersOn
-		if isSlippersOn then
-			_G.SlippersBtn.Text = "Slippers: ON"
-			_G.SlippersBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-			currentSlippers = createDualSlippers()
-		else
-			_G.SlippersBtn.Text = "Slippers: OFF"
-			_G.SlippersBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-			if currentSlippers then currentSlippers:Destroy(); currentSlippers = nil end
-		end
-	end)
 end)
 
-player.CharacterAdded:Connect(function(newChar)
-	character = newChar
-	currentRightStaff = nil
-	currentLeftHammer = nil
-	currentDualKarambit = nil
-	currentDualSwords = nil
-	currentSlippers = nil
-	stopSpin()
-	
-	task.wait(0.5)
+UserInputService.InputChanged:Connect(function(input)
+	if isDraggingColor and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		updateColor(input)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		isDraggingColor = false
+	end
+end)
+
+-- ==========================================
+-- REFRESH VŨ KHÍ KHI ĐỔI TAY
+-- ==========================================
+local function refreshWeapons()
+	if currentRightStaff then currentRightStaff:Destroy() currentRightStaff = nil end
+	if currentLeftHammer then currentLeftHammer:Destroy() currentLeftHammer = nil end
+	if currentDualKarambit then currentDualKarambit:Destroy() currentDualKarambit = nil end
+	if currentDualSwords then currentDualSwords:Destroy() currentDualSwords = nil end
+
 	if isRightStaffOn then currentRightStaff = createRightStaff() end
 	if isLeftHammerOn then currentLeftHammer = createSpringHammer() end
 	if isDualKarambitOn then currentDualKarambit = createDualKarambit() end
 	if isDualSwordsOn then currentDualSwords = createDualSwords() end
-	if isSlippersOn then currentSlippers = createDualSlippers() end
+end
+
+-- ==========================================
+-- VÒNG LẶP AUTO SWING
+-- ==========================================
+task.spawn(function()
+	while true do
+		task.wait(0.05)
+		if isSwinging then
+			if not currentCustomSword or not currentCustomSword.Parent or not currentCustomSword:IsDescendantOf(workspace) then
+				createCustomSword(character)
+			end
+			performSlash()
+		else
+			if currentCustomSword and not isSwinging then
+				currentCustomSword:Destroy()
+				currentCustomSword = nil
+			end
+		end
+	end
+end)
+
+-- ==========================================
+-- LẮP RÁP CÁC NÚT SỰ KIỆN
+-- ==========================================
+handToggleBtn.MouseButton1Click:Connect(function()
+	isLeftHandMode = not isLeftHandMode
+	if isLeftHandMode then
+		handToggleBtn.Text = "Hand Mode: LEFT"
+		handToggleBtn.BackgroundColor3 = Color3.fromRGB(220, 120, 50)
+	else
+		handToggleBtn.Text = "Hand Mode: RIGHT"
+		handToggleBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 220)
+	end
+	refreshWeapons()
+end)
+
+autoSwingBtn.MouseButton1Click:Connect(function()
+	isSwinging = not isSwinging
+	if isSwinging then
+		autoSwingBtn.Text = "Auto Swing: ON"
+		autoSwingBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		createCustomSword(character)
+	else
+		autoSwingBtn.Text = "Auto Swing: OFF"
+		autoSwingBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		if currentCustomSword then
+			currentCustomSword:Destroy()
+			currentCustomSword = nil
+		end
+	end
+end)
+
+glowBtn.MouseButton1Click:Connect(function()
+	isGlowing = not isGlowing
+	if isGlowing then
+		glowBtn.Text = "Glow Custom Blade: ON"
+		glowBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		if not currentCustomSword and not isSwinging then
+			createCustomSword(character)
+		end
+	else
+		glowBtn.Text = "Glow Custom Blade: OFF"
+		glowBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	end
+	applyGlowEffect()
+end)
+
+rightToggleBtn.MouseButton1Click:Connect(function()
+	isRightStaffOn = not isRightStaffOn
+	if isRightStaffOn then
+		rightToggleBtn.Text = "Staff: ON"
+		rightToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		currentRightStaff = createRightStaff()
+	else
+		rightToggleBtn.Text = "Staff: OFF"
+		rightToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		if currentRightStaff then currentRightStaff:Destroy() currentRightStaff = nil end
+	end
+end)
+
+leftToggleBtn.MouseButton1Click:Connect(function()
+	isLeftHammerOn = not isLeftHammerOn
+	if isLeftHammerOn then
+		leftToggleBtn.Text = "Spring Hammer: ON"
+		leftToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		currentLeftHammer = createSpringHammer()
+	else
+		leftToggleBtn.Text = "Spring Hammer: OFF"
+		leftToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		if currentLeftHammer then currentLeftHammer:Destroy() currentLeftHammer = nil end
+	end
+end)
+
+karambitToggleBtn.MouseButton1Click:Connect(function()
+	isDualKarambitOn = not isDualKarambitOn
+	if isDualKarambitOn then
+		karambitToggleBtn.Text = "Dual Karambit: ON"
+		karambitToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		currentDualKarambit = createDualKarambit()
+	else
+		karambitToggleBtn.Text = "Dual Karambit: OFF"
+		karambitToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		if currentDualKarambit then currentDualKarambit:Destroy() currentDualKarambit = nil end
+	end
+end)
+
+swordsToggleBtn.MouseButton1Click:Connect(function()
+	isDualSwordsOn = not isDualSwordsOn
+	if isDualSwordsOn then
+		swordsToggleBtn.Text = "Dual Swords: ON"
+		swordsToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		currentDualSwords = createDualSwords()
+	else
+		swordsToggleBtn.Text = "Dual Swords: OFF"
+		swordsToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		if currentDualSwords then currentDualSwords:Destroy() currentDualSwords = nil end
+	end
+end)
+
+colorChangeBtn.MouseButton1Click:Connect(function()
+	colorIndex = colorIndex % #staffColors + 1
+	local selected = staffColors[colorIndex]
+	currentStaffColor = selected.color
+	colorChangeBtn.Text = "Staff Color: " .. selected.name
+	
+	if currentRightStaff then
+		updateStaffColorParts(currentRightStaff, currentStaffColor)
+	end
+end)
+
+staffLengthBtn.MouseButton1Click:Connect(function()
+	lengthIndex = lengthIndex % #staffLengths + 1
+	local selected = staffLengths[lengthIndex]
+	currentStaffLength = selected.length
+	staffLengthBtn.Text = "Staff Length: " .. tostring(selected.length) .. " (" .. selected.name .. ")"
+	
+	if currentRightStaff then
+		currentRightStaff:Destroy()
+		currentRightStaff = createRightStaff()
+	end
+end)
+
+player.CharacterAdded:Connect(function(newChar)
+	character = newChar
+	isAnimating = false
+	currentCustomSword = nil
+	currentRightStaff = nil
+	currentLeftHammer = nil
+	currentDualKarambit = nil
+	currentDualSwords = nil
+	
+	task.wait(0.5)
+	refreshWeapons()
+	if isSwinging or isGlowing then 
+		createCustomSword(character) 
+	end
 end)
